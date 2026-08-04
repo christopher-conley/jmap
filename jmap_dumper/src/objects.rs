@@ -231,9 +231,14 @@ impl Ptr<UStruct> {
         let offset = self.ctx().struct_member("UStruct", "PropertiesSize");
         self.byte_offset(offset).cast()
     }
-    pub fn min_alignment(&self) -> Ptr<i32> {
-        let offset = self.ctx().struct_member("UStruct", "MinAlignment");
-        self.byte_offset(offset).cast()
+    pub async fn min_alignment(&self) -> Result<i32> {
+        let ctx = self.ctx();
+        let offset = ctx.struct_member("UStruct", "MinAlignment");
+        let ptr = self.byte_offset(offset);
+        Ok(match ctx.struct_member_size("UStruct", "MinAlignment") {
+            2 => ptr.cast::<i16>().read().await? as i32,
+            _ => ptr.cast::<i32>().read().await?,
+        })
     }
     pub fn script(&self) -> Ptr<TArray<u8>> {
         let offset = self.ctx().struct_member("UStruct", "Script");

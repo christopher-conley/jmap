@@ -1335,7 +1335,7 @@ pub async fn read_struct(obj: &Ptr<UStruct>) -> Result<Struct> {
         super_struct,
         properties,
         properties_size: obj.properties_size().read().await? as usize,
-        min_alignment: obj.min_alignment().read().await? as usize,
+        min_alignment: obj.min_alignment().await? as usize,
         script: obj.script().read_vec().await?,
     })
 }

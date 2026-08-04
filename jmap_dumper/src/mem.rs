@@ -1,4 +1,4 @@
-use crate::structs::StructInfo;
+use crate::structs::{StructInfo, StructMember};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use jmap::{
@@ -496,7 +496,7 @@ impl Ctx {
         };
         s
     }
-    pub fn struct_member(&self, struct_name: &str, member_name: &str) -> usize {
+    pub fn get_struct_member(&self, struct_name: &str, member_name: &str) -> &StructMember {
         let Some(member) = self
             .get_struct(struct_name)
             .members
@@ -505,7 +505,13 @@ impl Ctx {
         else {
             panic!("struct member {struct_name}::{member_name} not found");
         };
-        member.offset as usize
+        member
+    }
+    pub fn struct_member(&self, struct_name: &str, member_name: &str) -> usize {
+        self.get_struct_member(struct_name, member_name).offset as usize
+    }
+    pub fn struct_member_size(&self, struct_name: &str, member_name: &str) -> usize {
+        self.get_struct_member(struct_name, member_name).size as usize
     }
     pub fn ue_version(&self) -> (u16, u16) {
         self.version
