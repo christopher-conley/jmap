@@ -381,6 +381,15 @@ impl Mem for ProcessHandle {
                 std::io::Error::last_os_error()
             );
         }
+        // Partial read - treat as an error so BlockCache retries with an exact read.
+        if result as usize != buf.len() {
+            anyhow::bail!(
+                "process_vm_readv short read at 0x{:x}: {} of {} bytes",
+                address,
+                result,
+                buf.len()
+            );
+        }
         Ok(())
     }
 
@@ -400,6 +409,14 @@ impl Mem for ProcessHandle {
                 buf.len(),
                 address,
                 std::io::Error::last_os_error()
+            );
+        }
+        if result as usize != buf.len() {
+            anyhow::bail!(
+                "process_vm_writev short write at 0x{:x}: {} of {} bytes",
+                address,
+                result,
+                buf.len()
             );
         }
         Ok(())
