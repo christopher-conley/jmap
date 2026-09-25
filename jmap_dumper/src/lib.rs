@@ -479,6 +479,14 @@ pub struct Config {
     pub build_config: structs::BuildConfig,
     #[serde(default = "structs::default_target_triplet")]
     pub target_triplet: structs::TargetTriplet,
+    /// Key the build XORs the chunk-table pointer of GUObjectArray with (0 = none).
+    /// MultiVersus stores `FChunkedFixedUObjectArray::Objects ^ 0x01B5DEAFD6B4068C`.
+    #[serde(default)]
+    pub guobject_array_xor_key: u64,
+    /// Write the struct layout in use to this path as struct-info JSON, so a build with a
+    /// custom layout can start from the engine default and pass an edited copy back in.
+    #[serde(default)]
+    pub dump_struct_info: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -493,6 +501,10 @@ pub struct ConfigOverrides {
     pub target_triplet: Option<structs::TargetTriplet>,
     /// Module name to resolve `fname_pool`/`guobject_array` as RVA offsets against
     pub module: Option<String>,
+    /// See `Config::guobject_array_xor_key`
+    pub guobject_array_xor_key: Option<u64>,
+    /// See `Config::dump_struct_info`
+    pub dump_struct_info: Option<PathBuf>,
 }
 
 impl ConfigOverrides {
@@ -507,6 +519,8 @@ impl ConfigOverrides {
             target_triplet: self
                 .target_triplet
                 .unwrap_or_else(structs::default_target_triplet),
+            guobject_array_xor_key: self.guobject_array_xor_key.unwrap_or(0),
+            dump_struct_info: self.dump_struct_info,
         })
     }
 }
@@ -583,6 +597,8 @@ pub async fn resolve_config(
         target_triplet: overrides
             .target_triplet
             .unwrap_or_else(structs::default_target_triplet),
+        guobject_array_xor_key: overrides.guobject_array_xor_key.unwrap_or(0),
+        dump_struct_info: overrides.dump_struct_info.clone(),
     })
 }
 
@@ -660,6 +676,10 @@ pub async fn connect_manual(
     if diag::is_verbose() {
         print_struct_layouts(&struct_info);
     }
+    if let Some(path) = &config.dump_struct_info {
+        std::fs::write(path, serde_json::to_string_pretty(&struct_info)?)
+            .with_context(|| format!("writing struct info to {}", path.display()))?;
+    }
 
     Ok(Ctx::new(mem::CtxInner {
         mem: Box::new(mem),
@@ -672,6 +692,7 @@ pub async fn connect_manual(
         version: config.engine_version,
         build_config: config.build_config,
         uobjectarray: config.guobject_array,
+        uobjectarray_xor_key: config.guobject_array_xor_key,
         image_base_address: config.image_base,
         build_change_list: config.build_change_list,
     }))

@@ -461,6 +461,8 @@ pub struct CtxInner {
     pub version: (u16, u16),
     pub build_config: crate::structs::BuildConfig,
     pub uobjectarray: u64,
+    /// XOR applied to the chunk-table pointer read out of GUObjectArray (0 = none).
+    pub uobjectarray_xor_key: u64,
     pub image_base_address: u64,
     pub build_change_list: Option<String>,
 }

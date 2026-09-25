@@ -75,9 +75,15 @@ struct Cli {
     #[arg(long, value_parser = jmap_dumper::structs::parse_target_triplet, value_name = "TRIPLE")]
     target: Option<jmap_dumper::structs::TargetTriplet>,
 
-    /// Struct layout info .json (from pdb_dumper)
+    /// Struct layout info .json (from pdb_dumper, or edited from --dump-struct-info)
     #[arg(long, short)]
     struct_info: Option<PathBuf>,
+    /// Write the struct layout in use (engine default or --struct-info) to this .json
+    #[arg(long, value_name = "PATH")]
+    dump_struct_info: Option<PathBuf>,
+    /// Key the build XORs GUObjectArray's chunk-table pointer with (MultiVersus: 01B5DEAFD6B4068C)
+    #[arg(long, value_parser = parse_hex_u64, value_name = "HEX")]
+    guobject_array_xor_key: Option<u64>,
 
     /// Dump all objects instead of only native (/Script/) objects
     #[arg(long)]
@@ -190,6 +196,8 @@ fn main() -> Result<()> {
         },
         target_triplet: cli.target,
         module: cli.module.clone(),
+        guobject_array_xor_key: cli.guobject_array_xor_key,
+        dump_struct_info: cli.dump_struct_info.clone(),
     };
 
     let reflection_data: Jmap = if let Some(path) = cli.jmap {

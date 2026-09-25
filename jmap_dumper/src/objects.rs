@@ -854,10 +854,16 @@ impl Ptr<FChunkedFixedUObjectArray> {
         let max_per_chunk = self.elements_per_chunk().await?;
         let chunk_index = item / max_per_chunk;
 
-        Ok(self
-            .objects()
-            .read()
-            .await?
+        // Some builds store the chunk-table pointer scrambled (MultiVersus XORs it with a
+        // per-build key); the chunk pointers inside the table are plain.
+        let key = self.ctx().uobjectarray_xor_key;
+        let table = self.objects().read().await?;
+        let table = if key != 0 {
+            Ptr::new(table.address() ^ key, self.ctx().clone())?
+        } else {
+            table
+        };
+        Ok(table
             .offset(chunk_index)
             .read()
             .await?
